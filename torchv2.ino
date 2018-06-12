@@ -29,10 +29,29 @@
 #define IR_RECV_PIN 12
 #define COLOR_ORDER GRB
 #define CHIPSET     WS2812B
-#define NUM_LEDS    240
+#define NUM_LEDS    264
 
-const uint8_t MATRIX_WIDTH = 14;
-const uint8_t MATRIX_HEIGHT = 17;
+uint16_t XY(uint8_t x, uint8_t y);
+void dimAll(byte value);
+uint16_t colorWaves();
+uint16_t pride();
+uint16_t cloudTwinkles();
+uint16_t rainbowTwinkles();
+uint16_t snowTwinkles();
+uint16_t incandescentTwinkles();
+uint16_t fireflies();
+uint16_t rainbow();
+uint16_t rainbowWithGlitter();
+void addGlitter(fract8 chanceOfGlitter);
+uint16_t confetti();
+uint16_t bpm();
+uint16_t juggle();
+uint16_t showSolidColor();
+uint16_t hueCycle();
+uint16_t sinelon();
+
+const uint8_t MATRIX_WIDTH = 12;
+const uint8_t MATRIX_HEIGHT = 22;
 
 const int MATRIX_CENTER_X = MATRIX_WIDTH / 2;
 const int MATRIX_CENTER_Y = MATRIX_HEIGHT / 2;
@@ -104,45 +123,39 @@ uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 #include "Wave.h"
 #include "Fire2012WithPalette.h"
 #include "Torch.h"
+#include "Torch2.h"
 #include "AudioLogic.h"
 #include "AudioPatterns.h"
 
 const PatternList patterns = {
-  analyzerColumns,
-  analyzerColumnsSolid,
-  analyzerPixels,
-  fallingSpectrogram,
+ // analyzerColumns,
+ //analyzerColumnsSolid,
+ // analyzerPixels,
+ // fallingSpectrogram,
   audioFire,
-  rainbowAudioNoise,
-  rainbowStripeAudioNoise,
-  partyAudioNoise,
-  forestAudioNoise,
-  cloudAudioNoise,
-  fireAudioNoise,
-  lavaAudioNoise,
-  oceanAudioNoise,
-  blackAndWhiteAudioNoise,
-  blackAndBlueAudioNoise,
+  audioFire2,
+  torch,
+  torch2,
+  fire2012WithPalette,
+  pulse,
+  blackAndBlueNoise,
   fireNoise,
   lavaNoise,
-  torch,
-  fire2012WithPalette,
+  wave,
   rainbowNoise,
-  rainbowStripeNoise,
+  rainbowStripeNoise,  
+  // blackAndWhiteAudioNoise,  
+  colorWaves,  
   partyNoise,
   forestNoise,
   cloudNoise,
   oceanNoise,
-  blackAndWhiteNoise,
-  blackAndBlueNoise,
-  pulse,
-  wave,
-  pride,
-  colorWaves,
-  rainbow,
+ // blackAndWhiteNoise,  
+    pride,
+   rainbow,
   rainbowWithGlitter,
   confetti,
-  bpm,
+ // bpm,
   juggle,
   sinelon,
   hueCycle,
