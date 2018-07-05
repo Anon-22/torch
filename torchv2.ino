@@ -28,6 +28,11 @@
 #define CHIPSET     WS2812B
 #define NUM_LEDS    165
 
+#define INTERRUPT_PIN 2
+#define BUTTON1_PIN 4
+#define BUTTON2_PIN 5
+#define BUTTON3_PIN 6
+
 uint16_t XY(uint8_t x, uint8_t y);
 void dimAll(byte value);
 uint16_t colorWaves();
@@ -57,12 +62,9 @@ const byte MATRIX_CENTRE_Y = MATRIX_CENTER_Y - 1;
 
 const uint8_t brightnessCount = 5;
 uint8_t brightnessMap[brightnessCount] = { 16, 32, 64, 128, 255 };
-uint8_t brightness = brightnessMap[0];
+uint8_t brightness = brightnessMap[4];
 
 CRGB leds[NUM_LEDS + 1];
-
-#define BUTTON_1_PIN 2
-#define BUTTON_2_PIN 3
 
 #include "GradientPalettes.h"
 
@@ -70,7 +72,7 @@ typedef uint16_t(*PatternFunctionPointer)();
 typedef PatternFunctionPointer PatternList [];
 #define ARRAY_SIZE(A) (sizeof(A) / sizeof((A)[0]))
 
-unsigned long autoPlayDurationSeconds = 300;
+unsigned long autoPlayDurationSeconds = 10 * 60;
 unsigned long autoPlayTimout = 0;
 bool autoplayEnabled = false;
 
@@ -114,7 +116,7 @@ uint8_t gHue = 0; // rotating "base color" used by many of the patterns
 const PatternList patterns = {
   //torch,
   //torch2,
-  fire2012WithPalette,
+  //fire2012WithPalette,
   blackAndBlueNoise,
   fireNoise,
   lavaNoise,
@@ -138,25 +140,35 @@ const PatternList patterns = {
   rainbowTwinkles,
   snowTwinkles,
   cloudTwinkles,
-  incandescentTwinkles,
-  //fireflies
+  incandescentTwinkles
 };
 
 const int patternCount = ARRAY_SIZE(patterns);
 bool setup_done = false;
+long prevButtonPressMillis = 0;
 
-void button1_press()
+void button_press()
 {
-  if(setup_done)
+  if(!setup_done)
+    return ;
+
+  if(millis() - prevButtonPressMillis < 300)
+        return ;
+        
+  if(digitalRead(BUTTON1_PIN) == LOW) {
     move(1);
-}
+  }
 
-void button2_press()
-{
-  if(setup_done) {
+  if(digitalRead(BUTTON2_PIN) == LOW) {
     autoplayEnabled = !autoplayEnabled;
     EEPROM.write(2, autoplayEnabled);
   }
+
+  if(digitalRead(BUTTON3_PIN) == LOW) {
+    cycleBrightness();
+  }
+
+  prevButtonPressMillis = millis();
 }
 
 void setup() {
@@ -169,25 +181,37 @@ void setup() {
   //Serial.begin(115200);
   //Serial.println("setup start");
 
+  //pinMode(LED_PIN, OUTPUT);
   loadSettings();
 
   FastLED.addLeds<CHIPSET, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS);
   FastLED.setCorrection(TypicalLEDStrip);
   FastLED.setBrightness(brightness);
-  //  FastLED.setDither(false);
+  //      FastLED.setDither(false);
   FastLED.setDither(brightness < 255);
 
-  pinMode(BUTTON_1_PIN, INPUT_PULLUP);
-  pinMode(BUTTON_2_PIN, INPUT_PULLUP);
+  pinMode(INTERRUPT_PIN, INPUT_PULLUP);
+  pinMode(BUTTON1_PIN, INPUT_PULLUP);
+  pinMode(BUTTON2_PIN, INPUT_PULLUP);
+  pinMode(BUTTON3_PIN, INPUT_PULLUP);
 
   currentPattern = patterns[currentPatternIndex];
 
   autoPlayTimout = millis() + (autoPlayDurationSeconds * 1000);
-  attachInterrupt(digitalPinToInterrupt(BUTTON_1_PIN), button1_press, RISING);
-  attachInterrupt(digitalPinToInterrupt(BUTTON_2_PIN), button2_press, RISING);
+  attachInterrupt(digitalPinToInterrupt(INTERRUPT_PIN), button_press, FALLING);
 
   // Serial.println("setup end");
+  //FastLED.showColor(CRGB::Red);
   setup_done = true;
+}
+
+void ttt(unsigned int reqDelay)
+{
+  unsigned int requestedDelayTimeout = millis() + reqDelay;
+  while(true) {
+    if (millis() >= requestedDelayTimeout)
+      break;
+  }
 }
 
 void loop() {
@@ -197,6 +221,7 @@ void loop() {
   uint16_t requestedDelay = currentPattern();
 
   FastLED.show(); // display this frame
+  ttt(requestedDelay);
 
   if (autoplayEnabled && millis() > autoPlayTimout) {
     move(1);
@@ -221,7 +246,7 @@ void loadSettings() {
   autoplayEnabled = !!autoplayEnabled_;
 
   // brightness
-  brightness = 255;//EEPROM.read(0);
+  brightness = EEPROM.read(0);
   if (brightness < 1)
     brightness = 1;
   else if (brightness > 255)
@@ -266,10 +291,12 @@ int getBrightnessLevel() {
 }
 
 uint8_t cycleBrightness() {
-  adjustBrightness(1);
-
-  if (brightness == brightnessMap[0])
+  if (brightness == brightnessMap[brightnessCount - 1]) {
+    adjustBrightness(-(brightnessCount - 1));
     return 0;
+  }
+
+  adjustBrightness(1);
 
   return brightness;
 }
@@ -289,10 +316,10 @@ void adjustBrightness(int delta) {
   FastLED.setBrightness(brightness);
   FastLED.setDither(brightness < 255);
 
-  //EEPROM.write(0, brightness);
+  EEPROM.write(0, brightness);
 }
 
-void cyclePalette(int delta = 1) {
+/*void cyclePalette(int delta) {
   if (currentPaletteIndex == 0 && delta < 0)
     currentPaletteIndex = paletteCount - 1;
   else if (currentPaletteIndex >= paletteCount - 1 && delta > 0)
@@ -304,7 +331,7 @@ void cyclePalette(int delta = 1) {
     currentPaletteIndex = 0;
 
   palette = palettes[currentPaletteIndex];
-}
+}*/
 
 uint16_t XY( uint8_t x, uint8_t y) // maps the matrix to the strip
 {
@@ -596,13 +623,6 @@ uint16_t snowTwinkles()
 uint16_t incandescentTwinkles()
 {
   DENSITY = 255;
-  colortwinkles(incandescentColors);
-  return 20;
-}
-
-uint16_t fireflies()
-{
-  DENSITY = 16;
   colortwinkles(incandescentColors);
   return 20;
 }
